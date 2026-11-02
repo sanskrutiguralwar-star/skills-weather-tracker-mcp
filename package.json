@@ -1,0 +1,7 @@
+{
+  "name": "weather-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Weather tracker built with Copilot Agent mode and MCP"
+}

@@ -1,0 +1,29 @@
+name: Step 1 - MCP servers
+on:
+  push:
+    branches: [main]
+    paths: [".vscode/mcp.json"]
+permissions:
+  issues: write
+  contents: read
+jobs:
+  check:
+    if: ${{ !github.event.repository.is_template }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check MCP config
+        run: |
+          source .github/script/lib.sh
+          require_step 1
+          F=.vscode/mcp.json
+          jq -e . "$F" >/dev/null 2>&1 || fail 1 "\`$F\` is not valid JSON (no comments or trailing commas)."
+          jq -e '.mcpServers' "$F" >/dev/null 2>&1 && fail 1 "VS Code uses the key \`servers\`, not \`mcpServers\`."
+          jq -e '.servers.sqlite.command and .servers.fetch.command' "$F" >/dev/null 2>&1 \
+            || fail 1 "Define both \`servers.sqlite\` and \`servers.fetch\` with a \`command\`."
+          jq -e '.servers.sqlite.args | index("mcp<2")' "$F" >/dev/null 2>&1 \
+            || fail 1 "Add \`--with\` and \`mcp<2\` to the SQLite server \`args\` exactly as shown in Step 1. Without them the server fails to start."
+          advance 1 2

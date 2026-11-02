@@ -1,0 +1,30 @@
+name: Start Exercise
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  issues: write
+  contents: read
+concurrency:
+  group: start-exercise
+jobs:
+  start:
+    if: ${{ !github.event.repository.is_template }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create the exercise issue (once)
+        run: |
+          EXISTING=$(gh issue list --label exercise --state all --json number --jq '.[0].number // empty')
+          [ -z "$EXISTING" ] || { echo "Exercise already started."; exit 0; }
+          gh label create exercise --color 1f883d --force
+          for n in 1 2 3 4; do gh label create "step-$n" --color ededed --force; done
+          sed "s#{{repo}}#$GH_REPO#g" .github/steps/1-step.md > /tmp/step1.md
+          gh issue create \
+            --title "Exercise: Build a Weather Tracker with Copilot Agent Mode and MCP" \
+            --label exercise --label step-1 \
+            --body-file /tmp/step1.md

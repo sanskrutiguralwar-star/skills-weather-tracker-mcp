@@ -1,0 +1,25 @@
+name: Step 2 - Explore and design
+on:
+  push:
+    branches: [weather-app]
+permissions:
+  issues: write
+  contents: read
+jobs:
+  check:
+    if: ${{ !github.event.repository.is_template }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check schema and API notes
+        run: |
+          source .github/script/lib.sh
+          require_step 2
+          [ -f db/schema.sql ] || fail 2 "\`db/schema.sql\` is missing on the \`weather-app\` branch."
+          grep -qi "create table.*weather_logs" db/schema.sql || fail 2 "\`db/schema.sql\` must contain \`CREATE TABLE weather_logs\`."
+          grep -qi "create index" db/schema.sql || fail 2 "\`db/schema.sql\` must contain a \`CREATE INDEX\` on (city, created_at)."
+          [ -f docs/api-notes.md ] || fail 2 "\`docs/api-notes.md\` is missing."
+          advance 2 3

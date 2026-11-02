@@ -1,0 +1,33 @@
+name: Step 3 - CLI pull request
+on:
+  pull_request:
+    types: [opened]
+    branches: [main]
+permissions:
+  issues: write
+  contents: read
+  pull-requests: read
+jobs:
+  check:
+    if: ${{ !github.event.repository.is_template && github.head_ref == 'weather-app' }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check CLI files
+        run: |
+          source .github/script/lib.sh
+          require_step 3
+          for f in src/cli.js src/db.js src/weather.js; do
+            [ -f "$f" ] || fail 3 "\`$f\` is missing from your pull request."
+            node --check "$f" 2>/dev/null || fail 3 "\`$f\` has a syntax error (\`node --check\` failed)."
+          done
+          grep -q "better-sqlite3" package.json || fail 3 "\`package.json\` doesn't list \`better-sqlite3\`. Did you commit it?"
+          advance 3 4

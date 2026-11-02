@@ -1,0 +1,17 @@
+{
+  "name": "Weather Tracker with Copilot Agent Mode and MCP",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && (~/.local/bin/uvx mcp-server-fetch --help >/dev/null 2>&1; ~/.local/bin/uvx --with 'mcp<2' mcp-server-sqlite --help >/dev/null 2>&1; true)",
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/node/.local/bin"
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Weather Dashboard", "onAutoForward": "notify" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["GitHub.copilot", "GitHub.copilot-chat"]
+    }
+  }
+}

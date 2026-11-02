@@ -1,0 +1,4 @@
+node_modules/
+weather.db
+weather.db-journal
+.DS_Store

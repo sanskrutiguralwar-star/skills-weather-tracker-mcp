@@ -1,0 +1,28 @@
+name: Step 4 - Dashboard, verify, merge
+on:
+  push:
+    branches: [main]
+permissions:
+  issues: write
+  contents: read
+concurrency:
+  group: step-5
+jobs:
+  check:
+    if: ${{ !github.event.repository.is_template }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check merged result
+        run: |
+          source .github/script/lib.sh
+          require_step 4
+          [ -f src/server.js ] || fail 4 "\`src/server.js\` isn't on \`main\` yet. Did you merge the pull request?"
+          [ -f public/index.html ] || fail 4 "\`public/index.html\` is missing from \`main\`."
+          grep -qi "chart" public/index.html || fail 4 "\`public/index.html\` should use Chart.js for the temperature chart."
+          [ -f docs/verification.md ] || fail 4 "\`docs/verification.md\` (the MCP verification report) is missing."
+          grep -qi "weather_logs" docs/verification.md || fail 4 "\`docs/verification.md\` should mention \`weather_logs\`."
+          finish 4
