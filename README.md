@@ -51,6 +51,40 @@ You ──prompt──▶ Copilot Agent Mode
 - Use a **public** repository so Actions minutes are free.
 - If the issue doesn't appear in 20 seconds, check the **Actions** tab for a running or failed job.
 
+## Weather CLI
+
+Install the project dependencies, then add a city to the weather log:
+
+```sh
+npm install
+npm run add -- "London"
+```
+
+List the most recent 10 entries, or choose a limit:
+
+```sh
+npm run list
+npm run list -- --limit 5
+```
+
+Show temperature statistics for a city:
+
+```sh
+npm run stats -- "London"
+```
+
+The CLI stores observations in the repository's `weather.db` SQLite database. It uses Open-Meteo for city geocoding and current conditions; no API key is required.
+
+## Web Dashboard
+
+Start the dashboard server:
+
+```sh
+npm start
+```
+
+Open [http://localhost:3000](http://localhost:3000). Add a city with the form to fetch and save a new observation; the page shows recent logs, per-city summaries, and a temperature history chart.
+
 ---
 
 © 2026 • [MIT License](LICENSE)
