@@ -75,6 +75,16 @@ npm run stats -- "London"
 
 The CLI stores observations in the repository's `weather.db` SQLite database. It uses Open-Meteo for city geocoding and current conditions; no API key is required.
 
+## Web Dashboard
+
+Start the dashboard server:
+
+```sh
+npm start
+```
+
+Open [http://localhost:3000](http://localhost:3000). Add a city with the form to fetch and save a new observation; the page shows recent logs, per-city summaries, and a temperature history chart.
+
 ---
 
 © 2026 • [MIT License](LICENSE)

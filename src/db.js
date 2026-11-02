@@ -32,6 +32,24 @@ const statsStatement = database.prepare(`
   WHERE city = ? COLLATE NOCASE
 `);
 
+const citySummariesStatement = database.prepare(`
+  WITH ranked_logs AS (
+    SELECT city, country, temperature_c, created_at,
+           AVG(temperature_c) OVER (PARTITION BY city COLLATE NOCASE) AS average_temperature_c,
+           COUNT(*) OVER (PARTITION BY city COLLATE NOCASE) AS log_count,
+           ROW_NUMBER() OVER (
+             PARTITION BY city COLLATE NOCASE
+             ORDER BY datetime(created_at) DESC, id DESC
+           ) AS row_number
+    FROM weather_logs
+  )
+  SELECT city, country, temperature_c AS latest_temperature_c,
+         average_temperature_c, log_count, created_at AS latest_created_at
+  FROM ranked_logs
+  WHERE row_number = 1
+  ORDER BY datetime(latest_created_at) DESC, city COLLATE NOCASE
+`);
+
 // Store one weather observation using bound SQL parameters.
 export function insertWeatherLog(weather) {
   return insertStatement.run(weather).lastInsertRowid;
@@ -45,6 +63,11 @@ export function getRecentLogs(limit = 10) {
 // Summarize logged temperatures for a city, ignoring NULL temperatures in aggregates.
 export function getCityStats(city) {
   return statsStatement.get(city);
+}
+
+// Return the latest observation and temperature aggregates for each city.
+export function getCitySummaries() {
+  return citySummariesStatement.all();
 }
 
 // Close the database connection after the CLI command finishes.

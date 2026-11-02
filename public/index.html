@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#183b34">
+    <title>Weather Log</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #19332e;
+        --muted: #71807a;
+        --paper: #f2f5ef;
+        --white: #ffffff;
+        --line: #dce4dd;
+        --green: #2a715d;
+        --mint: #c9ef9a;
+        --coral: #e97860;
+        --gold: #efc25c;
+        --blue: #6eaec4;
+        --mono: "Space Mono", monospace;
+        --sans: "DM Sans", "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        color: var(--ink);
+        background-color: var(--paper);
+        background-image: repeating-linear-gradient(135deg, transparent 0 28px, rgba(33, 75, 61, 0.025) 28px 29px);
+        font-family: var(--sans);
+      }
+
+      button, input { font: inherit; }
+
+      .topbar {
+        color: #f5f7f0;
+        background: #183b34;
+        border-bottom: 4px solid var(--mint);
+      }
+
+      .topbar-inner, main {
+        width: min(1160px, calc(100% - 48px));
+        margin: 0 auto;
+      }
+
+      .topbar-inner {
+        min-height: 68px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .brand {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .brand-mark {
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 6px;
+        color: var(--mint);
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+
+      .connection {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        color: #d8e6db;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .connection::before {
+        width: 7px;
+        height: 7px;
+        content: "";
+        border-radius: 50%;
+        background: var(--mint);
+        box-shadow: 0 0 0 3px rgba(201, 239, 154, 0.13);
+      }
+
+      main { padding: 38px 0 56px; }
+
+      .intro {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 27px;
+        animation: arrive 420ms ease-out both;
+      }
+
+      .eyebrow, .section-kicker {
+        margin: 0 0 8px;
+        color: var(--green);
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { margin-bottom: 0; font-size: 36px; line-height: 1.08; }
+
+      .date-label {
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        text-align: right;
+      }
+
+      .refresh-form {
+        display: flex;
+        gap: 8px;
+        padding: 8px;
+        margin-bottom: 34px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--white);
+        box-shadow: 0 5px 18px rgba(25, 51, 46, 0.045);
+        animation: arrive 480ms ease-out both;
+      }
+
+      .refresh-form input {
+        min-width: 0;
+        flex: 1;
+        padding: 12px 14px;
+        border: 0;
+        outline: 0;
+        color: var(--ink);
+        background: transparent;
+      }
+
+      .refresh-form input::placeholder { color: #99a59e; }
+      .refresh-form input:focus-visible { box-shadow: inset 0 0 0 2px var(--blue); border-radius: 4px; }
+
+      .refresh-form button {
+        min-height: 44px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 5px;
+        color: #152b25;
+        background: var(--mint);
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 150ms ease, transform 150ms ease;
+      }
+
+      .refresh-form button:hover { background: #b6e47c; transform: translateY(-1px); }
+      .refresh-form button:disabled { cursor: wait; opacity: 0.65; transform: none; }
+
+      .status {
+        min-height: 20px;
+        margin: -24px 0 23px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .status[data-tone="error"] { color: #ad4037; }
+      .status[data-tone="success"] { color: var(--green); }
+
+      .section-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 13px;
+      }
+
+      .section-heading h2 { margin: 0; font-size: 16px; }
+      .section-heading span { color: var(--muted); font-family: var(--mono); font-size: 10px; }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+        gap: 12px;
+        margin-bottom: 31px;
+      }
+
+      .summary-card {
+        min-height: 152px;
+        padding: 17px 18px 15px;
+        border: 1px solid var(--line);
+        border-top: 3px solid var(--card-accent, var(--green));
+        border-radius: 6px;
+        background: var(--white);
+        animation: arrive 420ms ease-out both;
+      }
+
+      .summary-card:nth-child(4n + 2) { --card-accent: var(--coral); }
+      .summary-card:nth-child(4n + 3) { --card-accent: var(--blue); }
+      .summary-card:nth-child(4n + 4) { --card-accent: var(--gold); }
+
+      .summary-city-row { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+      .summary-city { margin: 0; font-size: 15px; font-weight: 700; }
+      .summary-country { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+      .summary-temp { margin: 13px 0 12px; font-size: 32px; font-weight: 600; line-height: 1; }
+      .summary-bottom { display: flex; gap: 12px; color: var(--muted); font-family: var(--mono); font-size: 10px; }
+      .summary-bottom strong { color: var(--ink); font-weight: 700; }
+
+      .chart-panel {
+        padding: 19px 20px 14px;
+        margin-bottom: 34px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--white);
+        animation: arrive 520ms ease-out both;
+      }
+
+      .chart-wrap { position: relative; height: 270px; }
+      .empty-state { padding: 18px 0; color: var(--muted); font-size: 13px; }
+
+      .log-section { animation: arrive 580ms ease-out both; }
+      .table-wrap { overflow-x: auto; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      table { width: 100%; min-width: 760px; border-collapse: collapse; background: rgba(255, 255, 255, 0.66); }
+      th, td { padding: 12px 14px; border-bottom: 1px solid #e6ebe6; text-align: left; white-space: nowrap; }
+      th { color: var(--muted); font-family: var(--mono); font-size: 9px; font-weight: 400; letter-spacing: 0; text-transform: uppercase; }
+      td { font-size: 12px; }
+      td.numeric { font-family: var(--mono); font-size: 11px; }
+      tbody tr:last-child td { border-bottom: 0; }
+      tbody tr:hover { background: #f9fbf7; }
+      .condition-cell { font-weight: 600; }
+      footer { padding-top: 19px; color: var(--muted); font-family: var(--mono); font-size: 10px; }
+
+      @keyframes arrive {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @media (max-width: 620px) {
+        .topbar-inner, main { width: min(100% - 30px, 1160px); }
+        main { padding-top: 28px; }
+        .intro { align-items: start; }
+        h1 { font-size: 30px; }
+        .date-label { max-width: 115px; line-height: 1.6; }
+        .refresh-form { gap: 4px; }
+        .refresh-form input { padding-left: 9px; }
+        .refresh-form button { padding: 0 11px; font-size: 12px; }
+        .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .summary-card { min-height: 145px; padding: 13px 12px; }
+        .summary-city-row { display: block; }
+        .summary-country { display: block; margin-top: 3px; }
+        .summary-temp { margin: 11px 0; font-size: 29px; }
+        .summary-bottom { flex-wrap: wrap; gap: 5px 10px; }
+        .chart-panel { padding: 15px 11px 10px; }
+        .chart-wrap { height: 230px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">W</span><span>Weather Log</span></div>
+        <span class="connection">OPEN-METEO</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Personal observations / Celsius</p>
+          <h1 id="page-title">Weather, at a glance.</h1>
+        </div>
+        <p class="date-label" id="today-label"></p>
+      </section>
+
+      <form class="refresh-form" id="refresh-form">
+        <input id="city-input" name="city" type="text" autocomplete="off" placeholder="Enter a city name" aria-label="City name" required>
+        <button id="refresh-button" type="submit">Add / Refresh</button>
+      </form>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+
+      <section aria-labelledby="summary-title">
+        <div class="section-heading">
+          <h2 id="summary-title">City summary</h2>
+          <span id="city-count">0 CITIES</span>
+        </div>
+        <div class="summary-grid" id="summary-grid"></div>
+        <p class="empty-state" id="summary-empty" hidden>No weather observations yet. Add a city above.</p>
+      </section>
+
+      <section class="chart-panel" aria-labelledby="chart-title">
+        <div class="section-heading">
+          <h2 id="chart-title">Temperature history</h2>
+          <span>RECENT LOGS / C</span>
+        </div>
+        <div class="chart-wrap" id="chart-wrap"><canvas id="temperature-chart" aria-label="Temperature history by city" role="img"></canvas></div>
+        <p class="empty-state" id="chart-empty" hidden>No temperature readings to plot yet.</p>
+      </section>
+
+      <section class="log-section" aria-labelledby="logs-title">
+        <div class="section-heading">
+          <h2 id="logs-title">Recent logs</h2>
+          <span>LAST 50</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>City</th><th>Temperature</th><th>Condition</th><th>Humidity</th><th>Wind</th><th>Logged</th></tr>
+            </thead>
+            <tbody id="logs-body"></tbody>
+          </table>
+        </div>
+        <p class="empty-state" id="logs-empty" hidden>No weather logs yet.</p>
+      </section>
+
+      <footer>Updates are saved to the local weather log.</footer>
+    </main>
+
+    <script>
+      const form = document.querySelector("#refresh-form");
+      const cityInput = document.querySelector("#city-input");
+      const refreshButton = document.querySelector("#refresh-button");
+      const statusMessage = document.querySelector("#status");
+      const summaryGrid = document.querySelector("#summary-grid");
+      const logsBody = document.querySelector("#logs-body");
+      const palette = ["#2a715d", "#e97860", "#438ca6", "#c69228", "#7587c4", "#a05f79"];
+      let temperatureChart;
+
+      // Format a temperature value for the dashboard.
+      function temperatureText(value) {
+        return value === null || value === undefined ? "--" : `${Number(value).toFixed(1)}\u00b0`;
+      }
+
+      // Format SQLite's UTC timestamp as a compact local date and time.
+      function dateText(value) {
+        const parsed = new Date(`${value.replace(" ", "T")}Z`);
+        if (Number.isNaN(parsed.getTime())) return value;
+        return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(parsed);
+      }
+
+      // Create a text-only element for values returned by the API.
+      function textElement(tagName, className, value) {
+        const element = document.createElement(tagName);
+        if (className) element.className = className;
+        element.textContent = value;
+        return element;
+      }
+
+      // Set an accessible status message and its visual tone.
+      function setStatus(message, tone = "") {
+        statusMessage.textContent = message;
+        statusMessage.dataset.tone = tone;
+      }
+
+      // Render one compact summary card per city.
+      function renderSummaries(summaries) {
+        summaryGrid.replaceChildren();
+        document.querySelector("#city-count").textContent = `${summaries.length} ${summaries.length === 1 ? "CITY" : "CITIES"}`;
+        document.querySelector("#summary-empty").hidden = summaries.length > 0;
+
+        summaries.forEach(function (summary, index) {
+          const card = document.createElement("article");
+          card.className = "summary-card";
+          card.style.setProperty("--card-accent", palette[index % palette.length]);
+
+          const cityRow = document.createElement("div");
+          cityRow.className = "summary-city-row";
+          cityRow.append(
+            textElement("h3", "summary-city", summary.city),
+            textElement("span", "summary-country", summary.country ?? ""),
+          );
+          card.append(cityRow);
+          card.append(textElement("p", "summary-temp", temperatureText(summary.latest_temperature_c)));
+
+          const bottom = document.createElement("div");
+          bottom.className = "summary-bottom";
+          bottom.append(
+            textElement("span", "", `AVG ${temperatureText(summary.average_temperature_c)}`),
+            textElement("strong", "", `${summary.log_count} ${summary.log_count === 1 ? "LOG" : "LOGS"}`),
+          );
+          card.append(bottom);
+          summaryGrid.append(card);
+        });
+      }
+
+      // Render the recent observations as table rows.
+      function renderLogs(logs) {
+        logsBody.replaceChildren();
+        document.querySelector("#logs-empty").hidden = logs.length > 0;
+
+        logs.forEach(function (log) {
+          const row = document.createElement("tr");
+          const cells = [
+            ["", `${log.city}${log.country ? `, ${log.country}` : ""}`],
+            ["numeric", temperatureText(log.temperature_c)],
+            ["condition-cell", log.condition ?? "--"],
+            ["numeric", log.humidity === null ? "--" : `${log.humidity}%`],
+            ["numeric", log.wind_kmh === null ? "--" : `${Number(log.wind_kmh).toFixed(1)} km/h`],
+            ["numeric", dateText(log.created_at)],
+          ];
+          cells.forEach(function ([className, value]) {
+            row.append(textElement("td", className, value));
+          });
+          logsBody.append(row);
+        });
+      }
+
+      // Draw a temperature line per city using the most recent observations.
+      function renderChart(logs) {
+        const chronologicalLogs = [...logs].reverse();
+        const readings = chronologicalLogs.filter(function (log) {
+          return log.temperature_c !== null;
+        });
+        const chartWrap = document.querySelector("#chart-wrap");
+        const chartEmpty = document.querySelector("#chart-empty");
+        chartWrap.hidden = readings.length === 0 || typeof Chart === "undefined";
+        chartEmpty.hidden = readings.length > 0 && typeof Chart !== "undefined";
+
+        if (typeof Chart === "undefined") {
+          chartEmpty.textContent = "The chart library could not be loaded.";
+        } else if (readings.length === 0) {
+          chartEmpty.textContent = "No temperature readings to plot yet.";
+        }
+
+        if (chartWrap.hidden) return;
+        if (temperatureChart) temperatureChart.destroy();
+
+        const cities = [...new Set(readings.map(function (log) { return log.city; }))];
+        temperatureChart = new Chart(document.querySelector("#temperature-chart"), {
+          type: "line",
+          data: {
+            labels: chronologicalLogs.map(function (log) { return dateText(log.created_at); }),
+            datasets: cities.map(function (city, index) {
+              return {
+                label: city,
+                data: chronologicalLogs.map(function (log) {
+                  return log.city === city ? log.temperature_c : null;
+                }),
+                borderColor: palette[index % palette.length],
+                backgroundColor: palette[index % palette.length],
+                borderWidth: 2,
+                pointRadius: chronologicalLogs.length > 30 ? 2 : 3,
+                pointHoverRadius: 5,
+                tension: 0.28,
+                spanGaps: true,
+              };
+            }),
+          },
+          options: {
+            maintainAspectRatio: false,
+            interaction: { mode: "nearest", intersect: false },
+            plugins: {
+              legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 7, color: "#52645d", font: { family: "DM Sans" } } },
+              tooltip: { callbacks: { label: function (context) { return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} C`; } } },
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { maxTicksLimit: 7, maxRotation: 0, color: "#71807a" } },
+              y: { title: { display: true, text: "Temperature (C)", color: "#71807a" }, grid: { color: "#e8eee8" }, ticks: { color: "#71807a" } },
+            },
+          },
+        });
+      }
+
+      // Load both dashboard datasets and refresh all views together.
+      async function loadDashboard() {
+        const responses = await Promise.all([fetch("/api/logs"), fetch("/api/summary")]);
+        if (responses.some(function (response) { return !response.ok; })) {
+          throw new Error("Dashboard data could not be loaded.");
+        }
+        const [logs, summaries] = await Promise.all(responses.map(function (response) { return response.json(); }));
+        renderSummaries(summaries);
+        renderLogs(logs);
+        renderChart(logs);
+      }
+
+      // Fetch and save a new observation for the submitted city.
+      async function handleRefresh(event) {
+        event.preventDefault();
+        const city = cityInput.value.trim();
+        if (!city) return;
+
+        refreshButton.disabled = true;
+        setStatus(`Fetching current weather for ${city}...`);
+        try {
+          const response = await fetch(`/api/refresh?city=${encodeURIComponent(city)}`, { method: "POST" });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error ?? "Weather could not be refreshed.");
+          await loadDashboard();
+          cityInput.value = "";
+          setStatus(`Saved a new observation for ${result.city}.`, "success");
+        } catch (error) {
+          setStatus(error.message || "Weather could not be refreshed.", "error");
+        } finally {
+          refreshButton.disabled = false;
+          cityInput.focus();
+        }
+      }
+
+      form.addEventListener("submit", handleRefresh);
+      document.querySelector("#today-label").textContent = new Intl.DateTimeFormat(undefined, { weekday: "long", month: "long", day: "numeric" }).format(new Date());
+      loadDashboard().catch(function (error) {
+        setStatus(error.message || "Dashboard data could not be loaded.", "error");
+      });
+    </script>
+  </body>
+</html>
