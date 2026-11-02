@@ -3,5 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Weather tracker built with Copilot Agent mode and MCP"
+  "description": "Weather tracker built with Copilot Agent mode and MCP",
+  "scripts": {
+    "add": "node src/cli.js add",
+    "list": "node src/cli.js list",
+    "stats": "node src/cli.js stats"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1"
+  }
 }
